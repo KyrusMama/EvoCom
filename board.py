@@ -205,7 +205,7 @@ class Board:
         a.x, a.y = x, y
 
         f = np.argmax(sound_outs)
-        if np.sum(sound_outs) > 1 * animal.freq_num:
+        if np.sum(sound_outs) > 1 * animal.freq_num / 2:
             a.sound = f
         else:
             a.sound = None
@@ -257,7 +257,7 @@ class Board:
             self.m.pop((a.x, a.y))
             self.undraw_animal(a)
         net_hp2 = sum([lps.hp for lps in self.animals if lps.alive])
-        print(net_hp, net_hp2)
+        #print(net_hp, net_hp2)
 
         return c
 

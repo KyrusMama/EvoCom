@@ -39,7 +39,7 @@ def plotter():
     sss = np.zeros(sensitive[0].shape)
     for ss in sensitive:
         sss += ss
-    print(sss)
+    #print(sss)
     sss /= len(sensitive)
     ms = [a.sound for a in turns if a.sound is not None]
     plt.hist(ms, bins=animal.freq_num, range=(-0.5, animal.freq_num+0.5))
@@ -83,12 +83,12 @@ if __name__ == "__main__":
             time.sleep(0)
 
         cur = turns.pop(0)
-        print(count, cur.id, len(turns)+1, len(b.m.keys()))
+        #print(count, cur.id, len(turns)+1, len(b.m.keys()))
 
         c = b.animals_decision(cur)
         turns.append(cur)
         if c is not None:
-            print("child", c.id)
+            #print("child", c.id)
             turns.append(c)
         turns = [a for a in turns if a.alive]
         # for a in turns:
