@@ -3,15 +3,16 @@ import numpy as np
 import animal
 
 
-output = True
+shouldDraw = True
 canvas_width = 1600
 canvas_height = 800
-if output:
+if shouldDraw:
     master = tk.Tk()
 sound_vol = 20
 linear_falloff = 1
 age_loss_bound = 50
 move_sound_angle = []
+
 
 
 def v_length(x, y):
@@ -53,46 +54,48 @@ class Board:
         self.m = {}
         self.animals = []
         self.h, self.b = h, b
-        if output:
+        if shouldDraw:
             self.w = tk.Canvas(master, width=canvas_width, height=canvas_height)
             self.w.pack()
             checkered(self.w, h, b)
 
     def draw_animal(self, a):
-        for o in a.obj:
-            self.w.delete(o)
-        a.obj = []
-        assert a.alive
-        (tlx, tly), (brx, bry) = get_box_boundries(a.x, a.y, self.h, self.b)
-        fill = 'white' if a.sound is None else 'red'
-        if a.true_age < age_loss_bound and fill == 'red':
-            fill = 'purple'
-        elif a.true_age < age_loss_bound:
-            fill = 'blue'
-        si = a.prev_si
-        wd = 1 #int(0.7*np.sum(si))+1
+        if shouldDraw:
+            for o in a.obj:
+                self.w.delete(o)
+            a.obj = []
+            assert a.alive
+            (tlx, tly), (brx, bry) = get_box_boundries(a.x, a.y, self.h, self.b)
+            fill = 'white' if a.sound is None else 'red'
+            if a.true_age < age_loss_bound and fill == 'red':
+                fill = 'purple'
+            elif a.true_age < age_loss_bound:
+                fill = 'blue'
+            si = a.prev_si
+            wd = 1 #int(0.7*np.sum(si))+1
 
-        if a.hp <= 0:
-            pass
-            #a.obj = self.w.create_oval(tlx, tly, brx, bry, fill='black', width=3)
-        # if a.hp <= 50:
-        #     a.obj = self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=3)
+            if a.hp <= 0:
+                pass
+                #a.obj = self.w.create_oval(tlx, tly, brx, bry, fill='black', width=3)
+            # if a.hp <= 50:
+            #     a.obj = self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=3)
 
-        else:
-            a.obj.append(self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=wd))
-            if si is not None:
-                ssi = np.sum(si, axis=1)
-                cx = int(tlx + brx)//2
-                cy = int(tly + bry)//2
-                a.obj.append(self.w.create_line(brx, cy, brx+2*ssi[0]+1, cy, fill="#476042", width=2))
-                a.obj.append(self.w.create_line(tlx, cy, tlx-2*ssi[2]-1, cy, fill="#476042", width=2))
-                a.obj.append(self.w.create_line(cx, bry, cx, bry+2*ssi[1]+1, fill="#476042", width=2))
-                a.obj.append(self.w.create_line(cx, tly, cx, tly-2*ssi[3]-1, fill="#476042", width=2))
+            else:
+                a.obj.append(self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=wd))
+                if si is not None:
+                    ssi = np.sum(si, axis=1)
+                    cx = int(tlx + brx)//2
+                    cy = int(tly + bry)//2
+                    a.obj.append(self.w.create_line(brx, cy, brx+2*ssi[0]+1, cy, fill="#476042", width=2))
+                    a.obj.append(self.w.create_line(tlx, cy, tlx-2*ssi[2]-1, cy, fill="#476042", width=2))
+                    a.obj.append(self.w.create_line(cx, bry, cx, bry+2*ssi[1]+1, fill="#476042", width=2))
+                    a.obj.append(self.w.create_line(cx, tly, cx, tly-2*ssi[3]-1, fill="#476042", width=2))
 
     def undraw_animal(self, a):
-        for o in a.obj:
-            self.w.delete(o)
-        a.obj = []
+        if shouldDraw:
+            for o in a.obj:
+                self.w.delete(o)
+            a.obj = []
 
     def lay_start(self, num):
         pos_list = []
@@ -103,11 +106,6 @@ class Board:
         for n in range(num):
             x, y = pos_list[n]
             a = animal.Animal(x, y)
-            for i in range(a.genes.shape[0]):
-                for j in range(a.genes.shape[1]):
-                    a.genes[i, j] = np.random.uniform(-4, 4)
-            for i in range(a.sound_sense.shape[0]):
-                a.sound_sense[i] = max(np.random.uniform(9, 10), 0.5)
             self.m[(x, y)] = a
             self.animals.append(a)
             self.draw_animal(a)
@@ -162,6 +160,7 @@ class Board:
         si = self.sound_input(a)
         si += (np.random.random(size=si.shape))/7.5
         a.prev_si = si
+
         rot_si = np.argmax(np.sum(si, axis=1))
         assert 0 <= rot_si < 4
         rot_lst = np.arange(0, 4)
@@ -173,8 +172,12 @@ class Board:
             rotated_si[rot_lst_in[i], :] = si[i, :]
         # print(rot_si, si, rotated_si)
 
+        # outs = a.make_decision(si)
         outs = a.make_decision(rotated_si)
+
         rotated_move_outs = outs[:4]
+        # move_outs = outs[:4]
+
         move_outs = np.zeros(rotated_move_outs.shape)
         for i in range(move_outs.shape[0]):
             move_outs[rot_lst_out[i]] = rotated_move_outs[i]
@@ -201,7 +204,8 @@ class Board:
         self.m[(x, y)] = a
         # move_sound_angle.append(angle_between_vectors(
         #     x-a.x, y-a.y, move_outs[0]-move_outs[2], move_outs[3]-move_outs[1]))
-        move_sound_angle.append(move_outs[rot_si] > 0.5 > move_outs[(rot_si+2) % 4])
+        # move_sound_angle.append(move_outs[rot_si] > 0.5 > move_outs[(rot_si+2) % 4])
+        move_sound_angle.append(move_outs)
         a.x, a.y = x, y
 
         f = np.argmax(sound_outs)

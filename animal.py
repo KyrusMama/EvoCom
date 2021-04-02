@@ -1,9 +1,9 @@
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
-freq_num = 10
-output_num = 14
-std_gene = 1
+freq_num = 1
+output_num = 4 + freq_num
+std_gene = 0.4
 std_sense = 1
 breeding_age = 5
 center = 1
@@ -25,9 +25,8 @@ class Animal:
         self.alive = True
         self.hp = 100
         self.x, self.y = x, y
-        self.genes = np.zeros((output_num, freq_num * 4))
         self.network = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20, 20), random_state=1, activation='logistic')
-        self.network.fit([np.random.random(freq_num * 4 + hidden_state_size)], [np.random.randint(2,size=output_num + hidden_state_size)])
+        self.network.fit([np.random.random(freq_num * 4 + hidden_state_size + 1)], [np.random.randint(2,size=output_num + hidden_state_size)])
         self.sound_sense = np.zeros(freq_num)
         self.hidden_state = np.random.random(hidden_state_size)
         self.age = 0
@@ -35,7 +34,7 @@ class Animal:
         self.true_age = 0
 
     def make_decision(self, sound_inputs):
-        fsi = [np.concatenate([self.hidden_state, sound_inputs.flatten()], axis=0)]
+        fsi = [np.concatenate([self.hidden_state, sound_inputs.flatten(), np.array([1])], axis=0)]
         #outs = np.matmul(self.genes, fsi)
         outs = self.network.predict(fsi)[0]
         self.hidden_state = outs[:hidden_state_size]

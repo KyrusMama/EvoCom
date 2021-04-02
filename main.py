@@ -10,41 +10,59 @@ take_inputs = False
 
 
 def plotter():
-    temp = [np.mean(board.move_sound_angle[max(i-50, 0): min(i+50, len(board.move_sound_angle)-1)])
-            for i in range(len(board.move_sound_angle))]
-    plt.plot(temp)
+    oneDir = [x[0] for x in board.move_sound_angle]
+    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+            for i in range(len(oneDir))]
+    plt.plot(temp,  color='blue')
+    oneDir = [x[1] for x in board.move_sound_angle]
+    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+            for i in range(len(oneDir))]
+    plt.plot(temp, color='red')
+    oneDir = [x[2] for x in board.move_sound_angle]
+    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+            for i in range(len(oneDir))]
+    plt.plot(temp, color='green')
+    oneDir = [x[3] for x in board.move_sound_angle]
+    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+            for i in range(len(oneDir))]
+    plt.plot(temp, color='orange')
 
     plt.title('angle')
 
     plt.figure()
-    plt.plot(avg_sens)
-    plt.title('sens')
+    out_lst = []
+    for key in saved_networks.keys():
+        fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
+                               np.zeros(animal.freq_num * 4),
+                               np.array([1])], axis=0)]
+        p1 = saved_networks[key].predict(fsi)[0]
+        mem = p1[:animal.hidden_state_size]
+        fsi = [np.concatenate([mem,
+                               np.zeros(animal.freq_num * 4),
+                               np.array([1])], axis=0)]
+        p1 = saved_networks[key].predict(fsi)[0]
 
-    plt.figure()
-    plt.plot(avg_sound, color='blue')
-    plt.plot(std_sound, color='red')
-    plt.title("avg sound freq, std")
 
-    plt.figure()
-    plt.plot(avg_hp, color='black')
-    plt.title('hp')
+        sounds = np.zeros((4, animal.freq_num))
+        sounds[0, :] = 10.
+        fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
+                               sounds.flatten(),
+                               np.array([1])], axis=0)]
+        p2 = saved_networks[key].predict(fsi)[0]
+        mem = p2[:animal.hidden_state_size]
+        fsi = [np.concatenate([mem,
+                               sounds.flatten(),
+                               np.array([1])], axis=0)]
+        p2 = saved_networks[key].predict(fsi)[0]
 
-    plt.figure()
-    plt.plot(avg_sound_genes, color='blue')
-    plt.plot(std_sound_genes, color='red')
-    plt.title('sound genes')
+        print(p1, p2)
+        diff = (p1 - p2)[animal.hidden_state_size: animal.hidden_state_size + 4]
+        dist = np.sqrt(np.sum(diff * diff))
+        out_lst.append(dist)
 
-    plt.figure()
-    sensitive = [a.sound_sense for a in turns]
-    sss = np.zeros(sensitive[0].shape)
-    for ss in sensitive:
-        sss += ss
-    #print(sss)
-    sss /= len(sensitive)
-    ms = [a.sound for a in turns if a.sound is not None]
-    plt.hist(ms, bins=animal.freq_num, range=(-0.5, animal.freq_num+0.5))
-    plt.plot(sss)
-    plt.title('avg sensitivity')
+    plt.plot([np.mean(out_lst[max(i - 10, 0): min(i + 10, len(out_lst) - 1)])
+            for i in range(len(out_lst))])
+    plt.title('effect of sound')
 
     plt.show()
 
@@ -63,10 +81,14 @@ if __name__ == "__main__":
     avg_sound_genes = []
     std_sound_genes = []
 
+    saved_networks = {}
+
     while len(turns) > 0:
         if count % (num) == 0:
-            b.w.update_idletasks()
-            b.w.update()
+            print(count)
+            if board.shouldDraw:
+                b.w.update_idletasks()
+                b.w.update()
         count += 1
         if count >= max_count:
             inp = input()
@@ -86,13 +108,17 @@ if __name__ == "__main__":
         #print(count, cur.id, len(turns)+1, len(b.m.keys()))
 
         c = b.animals_decision(cur)
-        turns.append(cur)
+        if cur.alive:
+            turns.append(cur)
         if c is not None:
             #print("child", c.id)
             turns.append(c)
         turns = [a for a in turns if a.alive]
         # for a in turns:
         #     assert a in b.animals
+
+        if cur.id not in saved_networks:
+            saved_networks[cur.id] = cur.network
 
         v = 0.
         for a in turns:
@@ -102,10 +128,6 @@ if __name__ == "__main__":
         avg_sens.append(v)
 
         v = []
-        for a in turns:
-            v.append(float(np.mean(a.genes[4:, :])))
-        avg_sound_genes.append(np.mean(v))
-        std_sound_genes.append(np.std(v))
 
         v = 0.
         v2 = []
