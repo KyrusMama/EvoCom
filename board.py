@@ -12,8 +12,8 @@ sound_vol = 20
 linear_falloff = 1
 age_loss_bound = 50
 move_sound_angle = []
-
-
+n_species = 2
+species_color_dict = ["red", "orange", "yellow", "green", "blue", "purple", "black", "white"]
 
 def v_length(x, y):
     return np.sqrt(x*x + y*y)
@@ -66,19 +66,13 @@ class Board:
             a.obj = []
             assert a.alive
             (tlx, tly), (brx, bry) = get_box_boundries(a.x, a.y, self.h, self.b)
-            fill = 'white' if a.sound is None else 'red'
-            if a.true_age < age_loss_bound and fill == 'red':
-                fill = 'purple'
-            elif a.true_age < age_loss_bound:
-                fill = 'blue'
+
+            fill = species_color_dict[a.species_id]
             si = a.prev_si
-            wd = 1 #int(0.7*np.sum(si))+1
+            wd = 1 if a.sound is None else 4
 
             if a.hp <= 0:
                 pass
-                #a.obj = self.w.create_oval(tlx, tly, brx, bry, fill='black', width=3)
-            # if a.hp <= 50:
-            #     a.obj = self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=3)
 
             else:
                 a.obj.append(self.w.create_oval(tlx, tly, brx, bry, fill=fill, width=wd))
@@ -105,7 +99,11 @@ class Board:
         np.random.shuffle(pos_list)
         for n in range(num):
             x, y = pos_list[n]
-            a = animal.Animal(x, y)
+            tid = np.random.randint(0, 4)
+            if tid > 1:
+                tid = 0
+            # tid = np.random.randint(0, n_species)
+            a = animal.Animal(x, y, s_id=tid, pred=tid)
             self.m[(x, y)] = a
             self.animals.append(a)
             self.draw_animal(a)
@@ -146,9 +144,10 @@ class Board:
         assert a.alive
         a.age += 1
         a.true_age += 1
+
         if a.true_age % age_loss_bound == 0 and a.true_age != 0:
             a.hp -= 50
-            tsa = [alt for alt in self.animals if alt.alive]
+            tsa = [alt for alt in self.animals if alt.alive and alt.species_id == a.species_id]
             np.random.shuffle(tsa)
 
             for alt in tsa:
@@ -156,6 +155,9 @@ class Board:
                     alt.hp += 50
                     break
         x, y = a.x, a.y
+
+        if a.predator:
+            a.hp -= 2
 
         si = self.sound_input(a)
         si += (np.random.random(size=si.shape))/7.5
@@ -209,7 +211,7 @@ class Board:
         a.x, a.y = x, y
 
         f = np.argmax(sound_outs)
-        if np.sum(sound_outs) > 1 * animal.freq_num / 2:
+        if sound_outs[f] > 1. / 2:
             a.sound = f
         else:
             a.sound = None
@@ -232,14 +234,13 @@ class Board:
                 for (bx, by) in plausible:
 
                     # random birth location
-                    bx = np.random.randint(0, self.b)
-                    by = np.random.randint(0, self.h)
+                    # bx = np.random.randint(0, self.b)
+                    # by = np.random.randint(0, self.h)
 
                     if self.check_placable(bx, by):
-                        c2 = animal.Animal(bx, by)
-                        bred = animal.Animal.breed(a, a2, c2)
+                        bred = animal.Animal.breed(a, a2, (bx, by))
                         if bred:
-                            c = c2
+                            c = bred
                             a.hp -= 50
                             a2.hp -= 50
                             a.age = 0
@@ -256,6 +257,34 @@ class Board:
                         else:
                             animal.cur_id -= 1
 
+        if a.predator:
+            for (lx, ly) in near_locations:
+                if (lx, ly) in self.m.keys():
+                    a2 = self.m[(lx, ly)]
+                    if not a2.predator:
+                        a2.hp -= 25
+                        a.hp += 25
+                        tsa = [alt for alt in self.animals if alt.alive and alt.species_id == a2.species_id]
+                        np.random.shuffle(tsa)
+                        for alt in tsa:
+                            if alt.true_age < a2.true_age:
+                                alt.hp += 25
+                                break
+                        tsa = [alt for alt in self.animals if alt.alive and alt.species_id == a.species_id]
+                        np.random.shuffle(tsa)
+                        for alt in tsa:
+                            if alt.true_age < a.true_age:
+                                alt.hp -= 12.5
+                                if alt.hp <= 0:
+                                    alt.alive = False
+                                    self.m.pop((alt.x, alt.y))
+                                    self.undraw_animal(alt)
+                                break
+
+                        if a2.hp <= 0:
+                            a2.alive = False
+                            self.m.pop((a2.x, a2.y))
+                            self.undraw_animal(a2)
         if a.hp <= 0:
             a.alive = False
             self.m.pop((a.x, a.y))
