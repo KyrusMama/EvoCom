@@ -8,7 +8,7 @@ canvas_width = 1600
 canvas_height = 800
 if shouldDraw:
     master = tk.Tk()
-sound_vol = 20
+sound_vol = 50
 linear_falloff = 1
 age_loss_bound = 50
 move_sound_angle = []
@@ -80,10 +80,10 @@ class Board:
                     ssi = np.sum(si, axis=1)
                     cx = int(tlx + brx)//2
                     cy = int(tly + bry)//2
-                    a.obj.append(self.w.create_line(brx, cy, brx+2*ssi[0]+1, cy, fill="#476042", width=2))
-                    a.obj.append(self.w.create_line(tlx, cy, tlx-2*ssi[2]-1, cy, fill="#476042", width=2))
-                    a.obj.append(self.w.create_line(cx, bry, cx, bry+2*ssi[1]+1, fill="#476042", width=2))
-                    a.obj.append(self.w.create_line(cx, tly, cx, tly-2*ssi[3]-1, fill="#476042", width=2))
+                    # a.obj.append(self.w.create_line(brx, cy, brx+2*ssi[0]+1, cy, fill="#476042", width=2))
+                    # a.obj.append(self.w.create_line(tlx, cy, tlx-2*ssi[2]-1, cy, fill="#476042", width=2))
+                    # a.obj.append(self.w.create_line(cx, bry, cx, bry+2*ssi[1]+1, fill="#476042", width=2))
+                    # a.obj.append(self.w.create_line(cx, tly, cx, tly-2*ssi[3]-1, fill="#476042", width=2))
 
     def undraw_animal(self, a):
         if shouldDraw:
@@ -124,13 +124,13 @@ class Board:
                         x_comp = vol * float(t.x - a.x) / distance
                         y_comp = vol * float(t.y - a.y) / distance
                         if x_comp > 0:
-                            si[0, t.sound] += x_comp
+                            si[0, t.sound] = max(x_comp, si[0, t.sound])
                         else:
-                            si[2, t.sound] -= x_comp
+                            si[2, t.sound] = max(x_comp, -si[2, t.sound])
                         if y_comp > 0:
-                            si[1, t.sound] += y_comp
+                            si[1, t.sound] = max(y_comp, si[1, t.sound])
                         else:
-                            si[3, t.sound] -= y_comp
+                            si[3, t.sound] = max(y_comp, -si[3, t.sound])
 
         return si
 
@@ -157,7 +157,7 @@ class Board:
         x, y = a.x, a.y
 
         if a.predator:
-            a.hp -= 2
+            a.hp -= 1.
 
         si = self.sound_input(a)
         si += (np.random.random(size=si.shape))/7.5
@@ -210,11 +210,13 @@ class Board:
         move_sound_angle.append(move_outs)
         a.x, a.y = x, y
 
-        f = np.argmax(sound_outs)
-        if sound_outs[f] > 1. / 2:
-            a.sound = f
-        else:
-            a.sound = None
+        # f = np.argmax(sound_outs)
+
+        # if sound_outs[0] > 0*1. / 2:
+
+        a.sound = a.species_id
+        # else:
+        #     a.sound = None
         self.draw_animal(a)
 
         near_locations = adj(x, y)
@@ -234,8 +236,8 @@ class Board:
                 for (bx, by) in plausible:
 
                     # random birth location
-                    # bx = np.random.randint(0, self.b)
-                    # by = np.random.randint(0, self.h)
+                    bx = np.random.randint(0, self.b)
+                    by = np.random.randint(0, self.h)
 
                     if self.check_placable(bx, by):
                         bred = animal.Animal.breed(a, a2, (bx, by))

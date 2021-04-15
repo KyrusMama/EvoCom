@@ -31,43 +31,43 @@ def plotter():
 
     for spec_id in range(board.n_species):
         plt.figure()
-        out_lst = []
-        for key in saved_networks.keys():
-            tspecies_id, tid = key
-            if tspecies_id == spec_id:
-                fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
-                                       np.zeros(animal.freq_num * 4),
-                                       np.array([1])], axis=0)]
-                p1 = saved_networks[key].predict(fsi)[0]
-                mem = p1[:animal.hidden_state_size]
-                fsi = [np.concatenate([mem,
-                                       np.zeros(animal.freq_num * 4),
-                                       np.array([1])], axis=0)]
-                p1 = saved_networks[key].predict(fsi)[0]
+        for spec_id2 in range(board.n_species):
+            out_lst = []
+            for key in saved_networks.keys():
+                tspecies_id, tid = key
+                if tspecies_id == spec_id:
+                    fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
+                                           np.zeros(animal.freq_num * 4),
+                                           np.array([1])], axis=0)]
+                    p1 = saved_networks[key].predict(fsi)[0]
+                    mem = p1[:animal.hidden_state_size]
+                    fsi = [np.concatenate([mem,
+                                           np.zeros(animal.freq_num * 4),
+                                           np.array([1])], axis=0)]
+                    p1 = saved_networks[key].predict(fsi)[0]
 
+                    sounds = np.zeros((4, animal.freq_num))
+                    sounds[0, spec_id2] = 10.
+                    fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
+                                           sounds.flatten(),
+                                           np.array([1])], axis=0)]
+                    p2 = saved_networks[key].predict(fsi)[0]
+                    mem = p2[:animal.hidden_state_size]
+                    fsi = [np.concatenate([mem,
+                                           sounds.flatten(),
+                                           np.array([1])], axis=0)]
+                    p2 = saved_networks[key].predict(fsi)[0]
 
-                sounds = np.zeros((4, animal.freq_num))
-                sounds[0, :] = 10.
-                fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
-                                       sounds.flatten(),
-                                       np.array([1])], axis=0)]
-                p2 = saved_networks[key].predict(fsi)[0]
-                mem = p2[:animal.hidden_state_size]
-                fsi = [np.concatenate([mem,
-                                       sounds.flatten(),
-                                       np.array([1])], axis=0)]
-                p2 = saved_networks[key].predict(fsi)[0]
+                    # print(p1, p2)
+                    p1_mo = np.exp(p1[animal.hidden_state_size: animal.hidden_state_size + 4])
+                    p2_mo = np.exp(p2[animal.hidden_state_size: animal.hidden_state_size + 4])
 
-                print(p1, p2)
-                p1_mo = np.exp(p1[animal.hidden_state_size: animal.hidden_state_size + 4])
-                p2_mo = np.exp(p2[animal.hidden_state_size: animal.hidden_state_size + 4])
+                    diff = 2 * ((p1_mo / np.sum(p1_mo)) - (p2_mo / np.sum(p2_mo)))
+                    dist = diff[0] - diff[2]
+                    out_lst.append(dist)
 
-                diff = 2 * ((p1_mo / np.sum(p1_mo)) - (p2_mo / np.sum(p2_mo)))
-                dist = np.sqrt(np.sum(diff * diff))
-                out_lst.append(dist)
-
-        plt.plot([np.mean(out_lst[max(i - 10, 0): min(i + 10, len(out_lst) - 1)])
-                for i in range(len(out_lst))])
+            plt.plot([np.mean(out_lst[max(i - 10, 0): min(i + 10, len(out_lst) - 1)])
+                    for i in range(len(out_lst))])
         plt.title('effect of sound on species '+str(spec_id))
 
     plt.show()

@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.neural_network import MLPRegressor
 
 freq_num = 2
-output_num = 4 + freq_num
-std_gene = 0.4
+output_num = 4 + 1
+std_gene = 0.2
 std_sense = 1
 breeding_age = 5
 center = 1
