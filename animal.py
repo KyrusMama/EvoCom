@@ -1,14 +1,14 @@
 import numpy as np
 from sklearn.neural_network import MLPRegressor
 
-freq_num = 2
+freq_num = 1
 output_num = 4 + 1
 std_gene = 0.2
 std_sense = 1
 breeding_age = 5
 center = 1
 cur_id = 0
-hidden_state_size = 20
+hidden_state_size = 0
 
 def chooser(a):
     r = a > center
@@ -56,6 +56,12 @@ class Animal:
             selector = np.random.randint(2, size=a1.network.coefs_[i].shape)
             child_weights = a1.network.coefs_[i] * selector + a2.network.coefs_[i] * (1 - selector) + np.random.normal(0, std_gene, size=a1.network.coefs_[i].shape)
             c.network.coefs_[i] = child_weights
+
+        # selector = np.random.randint(2)
+        # for i in range(len(a1.network.coefs_)):
+        #     child_weights = a1.network.coefs_[i] * selector + a2.network.coefs_[i] * (1 - selector) + np.random.normal(
+        #         0, std_gene, size=a1.network.coefs_[i].shape)
+        #     c.network.coefs_[i] = child_weights
 
         c.sound_sense = np.zeros(freq_num)
 

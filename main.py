@@ -62,7 +62,7 @@ def plotter():
                     p1_mo = np.exp(p1[animal.hidden_state_size: animal.hidden_state_size + 4])
                     p2_mo = np.exp(p2[animal.hidden_state_size: animal.hidden_state_size + 4])
 
-                    diff = 2 * ((p1_mo / np.sum(p1_mo)) - (p2_mo / np.sum(p2_mo)))
+                    diff = 2 * ((p2_mo / np.sum(p2_mo)) - (p1_mo / np.sum(p1_mo)))
                     dist = diff[0] - diff[2]
                     out_lst.append(dist)
 
@@ -74,7 +74,7 @@ def plotter():
 
 
 if __name__ == "__main__":
-    num = 60
+    num = 30
     b = board.Board(40, 80)
     b.lay_start(num)
     turns = [a for a in b.animals]

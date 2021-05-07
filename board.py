@@ -8,11 +8,11 @@ canvas_width = 1600
 canvas_height = 800
 if shouldDraw:
     master = tk.Tk()
-sound_vol = 50
+sound_vol = 20
 linear_falloff = 1
 age_loss_bound = 50
 move_sound_angle = []
-n_species = 2
+n_species = 1
 species_color_dict = ["red", "orange", "yellow", "green", "blue", "purple", "black", "white"]
 
 def v_length(x, y):
@@ -99,10 +99,11 @@ class Board:
         np.random.shuffle(pos_list)
         for n in range(num):
             x, y = pos_list[n]
-            tid = np.random.randint(0, 4)
-            if tid > 1:
-                tid = 0
+            # tid = np.random.randint(0, 4)
+            # if tid > 1:
+            #     tid = 0
             # tid = np.random.randint(0, n_species)
+            tid = 0
             a = animal.Animal(x, y, s_id=tid, pred=tid)
             self.m[(x, y)] = a
             self.animals.append(a)
@@ -126,11 +127,11 @@ class Board:
                         if x_comp > 0:
                             si[0, t.sound] = max(x_comp, si[0, t.sound])
                         else:
-                            si[2, t.sound] = max(x_comp, -si[2, t.sound])
+                            si[2, t.sound] = max(-x_comp, si[2, t.sound])
                         if y_comp > 0:
                             si[1, t.sound] = max(y_comp, si[1, t.sound])
                         else:
-                            si[3, t.sound] = max(y_comp, -si[3, t.sound])
+                            si[3, t.sound] = max(-y_comp, si[3, t.sound])
 
         return si
 
@@ -145,7 +146,7 @@ class Board:
         a.age += 1
         a.true_age += 1
 
-        if a.true_age % age_loss_bound == 0 and a.true_age != 0:
+        if a.true_age % (age_loss_bound * 2) == 0 and a.true_age != 0:
             a.hp -= 50
             tsa = [alt for alt in self.animals if alt.alive and alt.species_id == a.species_id]
             np.random.shuffle(tsa)
@@ -175,6 +176,7 @@ class Board:
         # print(rot_si, si, rotated_si)
 
         # outs = a.make_decision(si)
+        # assert rotated_si[0, 0] == np.max(rotated_si)
         outs = a.make_decision(rotated_si)
 
         rotated_move_outs = outs[:4]
@@ -207,13 +209,12 @@ class Board:
         # move_sound_angle.append(angle_between_vectors(
         #     x-a.x, y-a.y, move_outs[0]-move_outs[2], move_outs[3]-move_outs[1]))
         # move_sound_angle.append(move_outs[rot_si] > 0.5 > move_outs[(rot_si+2) % 4])
-        move_sound_angle.append(move_outs)
+        move_sound_angle.append(rotated_move_outs)
         a.x, a.y = x, y
 
         # f = np.argmax(sound_outs)
 
         # if sound_outs[0] > 0*1. / 2:
-
         a.sound = a.species_id
         # else:
         #     a.sound = None
