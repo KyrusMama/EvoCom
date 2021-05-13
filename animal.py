@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.neural_network import MLPRegressor
 
-freq_num = 1
+freq_num = 2
 output_num = 4 + 1
 std_gene = 0.2
 std_sense = 1
@@ -9,6 +9,8 @@ breeding_age = 5
 center = 1
 cur_id = 0
 hidden_state_size = 0
+
+
 
 def chooser(a):
     r = a > center
@@ -25,8 +27,8 @@ class Animal:
         self.alive = True
         self.hp = 100
         self.x, self.y = x, y
-        self.network = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(20, 20), random_state=1, activation='logistic')
-        self.network.fit([np.random.random(freq_num * 4 + hidden_state_size + 1)], [np.random.randint(2,size=output_num + hidden_state_size)])
+        self.network = MLPRegressor(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(4), random_state=1, activation='logistic')
+        self.network.fit([np.random.random(freq_num * 4 + hidden_state_size)], [np.random.randint(2,size=output_num + hidden_state_size)])
         self.sound_sense = np.zeros(freq_num)
         self.hidden_state = np.random.random(hidden_state_size)
         self.age = 0
@@ -36,7 +38,7 @@ class Animal:
         self.predator = pred
 
     def make_decision(self, sound_inputs):
-        fsi = [np.concatenate([self.hidden_state, sound_inputs.flatten(), np.array([1])], axis=0)]
+        fsi = [np.concatenate([self.hidden_state, sound_inputs.flatten()], axis=0)]
         #outs = np.matmul(self.genes, fsi)
         outs = self.network.predict(fsi)[0]
         self.hidden_state = outs[:hidden_state_size]

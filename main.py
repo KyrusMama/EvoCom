@@ -10,52 +10,50 @@ take_inputs = False
 
 
 def plotter():
-    oneDir = [x[0] for x in board.move_sound_angle]
-    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
-            for i in range(len(oneDir))]
-    plt.plot(temp,  color='blue')
-    oneDir = [x[1] for x in board.move_sound_angle]
-    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
-            for i in range(len(oneDir))]
-    plt.plot(temp, color='red')
-    oneDir = [x[2] for x in board.move_sound_angle]
-    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
-            for i in range(len(oneDir))]
-    plt.plot(temp, color='green')
-    oneDir = [x[3] for x in board.move_sound_angle]
-    temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
-            for i in range(len(oneDir))]
-    plt.plot(temp, color='orange')
-
-    plt.title('angle')
+    for i in range(2):
+        oneDir = [x[0] for (x,id) in board.move_sound_angle if id == i]
+        temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+                for i in range(len(oneDir))]
+        plt.plot(temp,  color='blue')
+        oneDir = [x[1] for (x,id) in board.move_sound_angle if id == i]
+        temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+                for i in range(len(oneDir))]
+        plt.plot(temp, color='red')
+        oneDir = [x[2] for (x,id) in board.move_sound_angle if id == i]
+        temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+                for i in range(len(oneDir))]
+        plt.plot(temp, color='green')
+        oneDir = [x[3] for (x,id) in board.move_sound_angle if id == i]
+        temp = [np.mean(oneDir[max(i - 100, 0): min(i + 100, len(oneDir) - 1)])
+                for i in range(len(oneDir))]
+        plt.plot(temp, color='orange')
+        
+        plt.title('angle ' + str(i))
+        plt.figure()
 
     for spec_id in range(board.n_species):
-        plt.figure()
+        
         for spec_id2 in range(board.n_species):
             out_lst = []
             for key in saved_networks.keys():
                 tspecies_id, tid = key
                 if tspecies_id == spec_id:
                     fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
-                                           np.zeros(animal.freq_num * 4),
-                                           np.array([1])], axis=0)]
+                                           np.zeros(animal.freq_num * 4)], axis=0)]
                     p1 = saved_networks[key].predict(fsi)[0]
                     mem = p1[:animal.hidden_state_size]
                     fsi = [np.concatenate([mem,
-                                           np.zeros(animal.freq_num * 4),
-                                           np.array([1])], axis=0)]
+                                           np.zeros(animal.freq_num * 4)], axis=0)]
                     p1 = saved_networks[key].predict(fsi)[0]
 
                     sounds = np.zeros((4, animal.freq_num))
                     sounds[0, spec_id2] = 10.
                     fsi = [np.concatenate([np.zeros(animal.hidden_state_size),
-                                           sounds.flatten(),
-                                           np.array([1])], axis=0)]
+                                           sounds.flatten()], axis=0)]
                     p2 = saved_networks[key].predict(fsi)[0]
                     mem = p2[:animal.hidden_state_size]
                     fsi = [np.concatenate([mem,
-                                           sounds.flatten(),
-                                           np.array([1])], axis=0)]
+                                           sounds.flatten()], axis=0)]
                     p2 = saved_networks[key].predict(fsi)[0]
 
                     # print(p1, p2)
@@ -69,12 +67,12 @@ def plotter():
             plt.plot([np.mean(out_lst[max(i - 10, 0): min(i + 10, len(out_lst) - 1)])
                     for i in range(len(out_lst))])
         plt.title('effect of sound on species '+str(spec_id))
-
+        plt.figure()
     plt.show()
 
 
 if __name__ == "__main__":
-    num = 30
+    num = 50
     b = board.Board(40, 80)
     b.lay_start(num)
     turns = [a for a in b.animals]

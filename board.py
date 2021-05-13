@@ -12,7 +12,7 @@ sound_vol = 20
 linear_falloff = 1
 age_loss_bound = 50
 move_sound_angle = []
-n_species = 1
+n_species = 2
 species_color_dict = ["red", "orange", "yellow", "green", "blue", "purple", "black", "white"]
 
 def v_length(x, y):
@@ -92,6 +92,13 @@ class Board:
             a.obj = []
 
     def lay_start(self, num):
+        layer1 = np.zeros((8,4))
+        layer1[0,0] = 1
+        # layer1[4,0] = 1
+
+        layer2 = np.zeros((4,5))
+        layer2[0,0] = 1
+
         pos_list = []
         for x in range(self.b):
             for y in range(self.h):
@@ -99,13 +106,19 @@ class Board:
         np.random.shuffle(pos_list)
         for n in range(num):
             x, y = pos_list[n]
-            # tid = np.random.randint(0, 4)
-            # if tid > 1:
-            #     tid = 0
-            # tid = np.random.randint(0, n_species)
-            tid = 0
+            tid = np.random.randint(0, 1)
+            if tid > 1:
+                tid = 0
             a = animal.Animal(x, y, s_id=tid, pred=tid)
             self.m[(x, y)] = a
+            self.animals.append(a)
+            self.draw_animal(a)
+        for i in range(5):
+            x, y = np.random.randint(0,self.b), np.random.randint(0,self.h)
+            a = animal.Animal(x, y, s_id = 1, pred = 1)
+            a.network.coefs_[0] = layer1
+            a.network.coefs_[1] = layer2
+            self.m[(x,y)] = a
             self.animals.append(a)
             self.draw_animal(a)
 
@@ -146,7 +159,7 @@ class Board:
         a.age += 1
         a.true_age += 1
 
-        if a.true_age % (age_loss_bound * 2) == 0 and a.true_age != 0:
+        if a.species_id == 0 and a.true_age % (age_loss_bound * 2) == 0 and a.true_age != 0:
             a.hp -= 50
             tsa = [alt for alt in self.animals if alt.alive and alt.species_id == a.species_id]
             np.random.shuffle(tsa)
@@ -158,13 +171,15 @@ class Board:
         x, y = a.x, a.y
 
         if a.predator:
-            a.hp -= 1.
+            a.hp -= 0
 
         si = self.sound_input(a)
         si += (np.random.random(size=si.shape))/7.5
         a.prev_si = si
 
-        rot_si = np.argmax(np.sum(si, axis=1))
+        #rot_si = np.argmax(np.sum(si, axis=1))
+        rot_si = np.argmax(si[:,0])
+        
         assert 0 <= rot_si < 4
         rot_lst = np.arange(0, 4)
         assert rot_lst.shape[0] == 4
@@ -209,7 +224,7 @@ class Board:
         # move_sound_angle.append(angle_between_vectors(
         #     x-a.x, y-a.y, move_outs[0]-move_outs[2], move_outs[3]-move_outs[1]))
         # move_sound_angle.append(move_outs[rot_si] > 0.5 > move_outs[(rot_si+2) % 4])
-        move_sound_angle.append(rotated_move_outs)
+        move_sound_angle.append((rotated_move_outs,a.species_id))
         a.x, a.y = x, y
 
         # f = np.argmax(sound_outs)
@@ -226,39 +241,40 @@ class Board:
         c = None
         # proximity_loss = sum([1 for (tx, ty) in near_locations if (tx, ty) in self.m.keys()])
         # a.hp -= proximity_loss
-        for (lx, ly) in near_locations:
-            if made:
-                break
-            if (lx, ly) in self.m.keys():
-                a2 = self.m[(lx, ly)]
-                plausible = [v for v in near_locations]
-                plausible.extend(adj(lx, ly))
-                np.random.shuffle(plausible)
-                for (bx, by) in plausible:
+        if a.species_id == 0:
+            for (lx, ly) in near_locations:
+                if made:
+                    break
+                if (lx, ly) in self.m.keys():
+                    a2 = self.m[(lx, ly)]
+                    plausible = [v for v in near_locations]
+                    plausible.extend(adj(lx, ly))
+                    np.random.shuffle(plausible)
+                    for (bx, by) in plausible:
 
-                    # random birth location
-                    bx = np.random.randint(0, self.b)
-                    by = np.random.randint(0, self.h)
+                        # random birth location
+                        bx = np.random.randint(0, self.b)
+                        by = np.random.randint(0, self.h)
 
-                    if self.check_placable(bx, by):
-                        bred = animal.Animal.breed(a, a2, (bx, by))
-                        if bred:
-                            c = bred
-                            a.hp -= 50
-                            a2.hp -= 50
-                            a.age = 0
-                            a2.age = 0
-                            if a2.hp <= 0:
-                                a2.alive = False
-                                self.m.pop((a2.x, a2.y))
-                                self.undraw_animal(a2)
-                            made = True
-                            self.m[(bx, by)] = c
-                            self.animals.append(c)
-                            self.draw_animal(c)
-                            break
-                        else:
-                            animal.cur_id -= 1
+                        if self.check_placable(bx, by):
+                            bred = animal.Animal.breed(a, a2, (bx, by))
+                            if bred:
+                                c = bred
+                                a.hp -= 50
+                                a2.hp -= 50
+                                a.age = 0
+                                a2.age = 0
+                                if a2.hp <= 0:
+                                    a2.alive = False
+                                    self.m.pop((a2.x, a2.y))
+                                    self.undraw_animal(a2)
+                                made = True
+                                self.m[(bx, by)] = c
+                                self.animals.append(c)
+                                self.draw_animal(c)
+                                break
+                            else:
+                                animal.cur_id -= 1
 
         if a.predator:
             for (lx, ly) in near_locations:
